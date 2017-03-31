@@ -12,6 +12,8 @@ import com.google.api.server.spi.config.ApiNamespace;
 
 import javax.inject.Named;
 
+import vinhtv.android.javalib.JokesSupplier;
+
 /**
  * An endpoint class we are exposing
  */
@@ -39,8 +41,10 @@ public class MyEndpoint {
 
     @ApiMethod(name = "tellJoke")
     public MyBean tellJoke() {
+        JokesSupplier jokesSupplier = new JokesSupplier();
+
         MyBean response = new MyBean();
-        response.setData("Well done.");
+        response.setData(jokesSupplier.provide());
 
         return response;
     }
