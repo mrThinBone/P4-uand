@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,10 +20,9 @@ import vinhtv.android.app.androidlib.ShowJokeActivity;
 import vinhtv.android.builditbigger.backend.myApi.MyApi;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements FetchJokeStoryTask.OnTaskDoneListener {
 
-    private MyApi mApiService;
-    private MainActivityFragment mFragment;
+    MainActivityFragment mFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,53 +55,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void tellJoke(View view) {
-        new FetchJokeStoryTask().execute();
+        mFragment.showLoadingProgress();
+        new FetchJokeStoryTask(this).execute();
     }
 
     public void doNothing(View view) {}
 
-    private class FetchJokeStoryTask extends AsyncTask<Void, Void, String> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mFragment.showLoadingProgress();
-            if(mApiService == null) {
-                MyApi.Builder builder = new MyApi.Builder(AndroidHttp.newCompatibleTransport(),
-                        new AndroidJsonFactory(), null)
-                        .setRootUrl("http://10.0.2.2:8080/_ah/api/")
-                        .setGoogleClientRequestInitializer(new GoogleClientRequestInitializer() {
-                            @Override
-                            public void initialize(AbstractGoogleClientRequest<?> request) throws IOException {
-                                request.setDisableGZipContent(true);
-                            }
-                        });
-                mApiService = builder.build();
-            }
-        }
-
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                return mApiService.tellJoke().execute().getData();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-
-        }
-
-        @Override
-        protected void onPostExecute(String data) {
-            super.onPostExecute(data);
-            mFragment.dismissLoadingProgress();
-            if(data != null) {
-                Intent showStory = new Intent(MainActivity.this, ShowJokeActivity.class);
-                Bundle extras = new Bundle();
-                extras.putString(Intent.EXTRA_TEXT, data);
-                showStory.putExtras(extras);
-                startActivity(showStory);
-            }
+    @Override
+    public void onDone(String data) {
+        mFragment.dismissLoadingProgress();
+        if(!TextUtils.isEmpty(data)) {
+            Intent showStory = new Intent(MainActivity.this, ShowJokeActivity.class);
+            Bundle extras = new Bundle();
+            extras.putString(Intent.EXTRA_TEXT, data);
+            showStory.putExtras(extras);
+            startActivity(showStory);
         }
     }
 }
